@@ -1,0 +1,621 @@
+{
+  "source": "js/config.js → YGO.catalog() + getCardById()",
+  "note": "卡图暂时不入库，image 统一为空串；effect 为完整效果配置，无效果卡为 null",
+  "count": 53,
+  "cards": [
+    {
+      "id": "鲜花女郎",
+      "name": "鲜花女郎",
+      "atk": 600,
+      "def": 900,
+      "attr": "光",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "森林游侠",
+      "name": "森林游侠",
+      "atk": 1200,
+      "def": 700,
+      "attr": "风",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "雪原剑士",
+      "name": "雪原剑士",
+      "atk": 1400,
+      "def": 1000,
+      "attr": "光",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "雏菊少女",
+      "name": "雏菊少女",
+      "atk": 400,
+      "def": 1100,
+      "attr": "光",
+      "rarity": "N",
+      "effect": {
+        "key": "pierce500",
+        "badge": "穿盾-500",
+        "label": "无视护盾 -500",
+        "pierce": 500,
+        "text": "额外无视对手护盾，直接减少对方 500 点生命（普通攻击仍会被护盾抵挡）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "波斯菊之笑",
+      "name": "波斯菊之笑",
+      "atk": 900,
+      "def": 800,
+      "attr": "炎",
+      "rarity": "N",
+      "effect": {
+        "key": "shieldGain15",
+        "badge": "回合盾×1.5",
+        "label": "本回合护盾 ×1.5",
+        "turnShieldGainMul": 1.5,
+        "text": "出牌后，本回合己方获得的所有护盾（含此前已获得的、本卡的，以及本回合后续出牌的）都变为 1.5 倍；受护盾上限约束，下回合自动失效。"
+      },
+      "image": ""
+    },
+    {
+      "id": "穴居窃贼",
+      "name": "穴居窃贼",
+      "atk": 700,
+      "def": 500,
+      "attr": "暗",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "举火小鬼",
+      "name": "举火小鬼",
+      "atk": 900,
+      "def": 600,
+      "attr": "炎",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "采菇人",
+      "name": "采菇人",
+      "atk": 400,
+      "def": 1000,
+      "attr": "地",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "地穴铁匠",
+      "name": "地穴铁匠",
+      "atk": 1300,
+      "def": 900,
+      "attr": "炎",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "沼泽渔夫",
+      "name": "沼泽渔夫",
+      "atk": 1000,
+      "def": 800,
+      "attr": "水",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "投索小鬼",
+      "name": "投索小鬼",
+      "atk": 800,
+      "def": 700,
+      "attr": "风",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "火药工匠",
+      "name": "火药工匠",
+      "atk": 1100,
+      "def": 1000,
+      "attr": "炎",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "林影弓手",
+      "name": "林影弓手",
+      "atk": 1200,
+      "def": 600,
+      "attr": "风",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "牧场老枪手",
+      "name": "牧场老枪手",
+      "atk": 900,
+      "def": 1000,
+      "attr": "地",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "峡谷女猎手",
+      "name": "峡谷女猎手",
+      "atk": 1100,
+      "def": 600,
+      "attr": "风",
+      "rarity": "N",
+      "effect": {
+        "key": "drawSelf",
+        "badge": "抽1张",
+        "label": "自己抽 1 张卡",
+        "drawSelf": 1,
+        "text": "出牌后立刻从自己的牌库抽 1 张卡（手牌达到上限或牌库已空时抽不到）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "雨巷枪客",
+      "name": "雨巷枪客",
+      "atk": 1200,
+      "def": 800,
+      "attr": "水",
+      "rarity": "N",
+      "effect": {
+        "key": "restoreCost",
+        "badge": "回1费",
+        "label": "回复 1 点费用",
+        "restoreCost": 1,
+        "text": "出牌后回复自己 1 点费用，回复后不会超过本回合的费用上限。"
+      },
+      "image": ""
+    },
+    {
+      "id": "驿站蒙面客",
+      "name": "驿站蒙面客",
+      "atk": 1000,
+      "def": 700,
+      "attr": "暗",
+      "rarity": "N",
+      "effect": {
+        "key": "oppDrawPenalty",
+        "badge": "敌补-1",
+        "label": "对手下次少补 1 张",
+        "oppDrawPenalty": 1,
+        "text": "对手下一次补牌少补 1 张（原本补到 5 张，只会补到 4 张）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "西部骑士",
+      "name": "西部骑士",
+      "atk": 1700,
+      "def": 1400,
+      "attr": "地",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "暗夜枪骑",
+      "name": "暗夜枪骑",
+      "atk": 2000,
+      "def": 1200,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "潮汐法师",
+      "name": "潮汐法师",
+      "atk": 1500,
+      "def": 1900,
+      "attr": "水",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "月影弓手",
+      "name": "月影弓手",
+      "atk": 1900,
+      "def": 1100,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "樱吹雪",
+      "name": "樱吹雪",
+      "atk": 1400,
+      "def": 1800,
+      "attr": "风",
+      "rarity": "R",
+      "effect": {
+        "key": "shieldDouble",
+        "badge": "护盾×2",
+        "label": "护盾双倍",
+        "shieldTotalMul": 2,
+        "text": "出牌后自身护盾变为双倍（含本次 DEF 转化的护盾，不超过护盾上限）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "暮色薰衣",
+      "name": "暮色薰衣",
+      "atk": 1600,
+      "def": 1700,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": {
+        "key": "heal500",
+        "badge": "回复500",
+        "label": "回复 500",
+        "heal": 500,
+        "text": "出牌时恢复 500 点生命（不超过生命上限）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "向日葵少女",
+      "name": "向日葵少女",
+      "atk": 2000,
+      "def": 1300,
+      "attr": "光",
+      "rarity": "R",
+      "effect": {
+        "key": "damageDouble",
+        "badge": "伤害×2",
+        "label": "伤害双倍",
+        "damageMul": 2,
+        "text": "本次出牌造成的伤害变为双倍。"
+      },
+      "image": ""
+    },
+    {
+      "id": "淬毒双刃",
+      "name": "淬毒双刃",
+      "atk": 1900,
+      "def": 1200,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "绿焰萨满",
+      "name": "绿焰萨满",
+      "atk": 1600,
+      "def": 1900,
+      "attr": "地",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "月夜狼骑",
+      "name": "月夜狼骑",
+      "atk": 2100,
+      "def": 1400,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "青铜禁卫",
+      "name": "青铜禁卫",
+      "atk": 1500,
+      "def": 2000,
+      "attr": "地",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "腐沼德鲁伊",
+      "name": "腐沼德鲁伊",
+      "atk": 1800,
+      "def": 1700,
+      "attr": "水",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "酒馆双枪",
+      "name": "酒馆双枪",
+      "atk": 1900,
+      "def": 1200,
+      "attr": "炎",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "铁道警长",
+      "name": "铁道警长",
+      "atk": 1700,
+      "def": 1900,
+      "attr": "光",
+      "rarity": "R",
+      "effect": {
+        "key": "oppCostPenalty",
+        "badge": "敌费-1",
+        "label": "敌方下回合费用 -1",
+        "oppCostPenalty": 1,
+        "text": "对手下个回合的可用费用自动扣除 1 点。"
+      },
+      "image": ""
+    },
+    {
+      "id": "暮钟执法官",
+      "name": "暮钟执法官",
+      "atk": 2000,
+      "def": 1500,
+      "attr": "光",
+      "rarity": "R",
+      "effect": {
+        "key": "drawSelf",
+        "badge": "即抽1张",
+        "label": "当前回合抽 1 张",
+        "drawSelf": 1,
+        "text": "出牌后立刻从自己的牌库抽 1 张卡（当前回合就生效；手牌达到上限或牌库已空时抽不到）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "哀伤幽魂",
+      "name": "哀伤幽魂",
+      "atk": 2300,
+      "def": 2600,
+      "attr": "暗",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "烈焰双刃",
+      "name": "烈焰双刃",
+      "atk": 2800,
+      "def": 1900,
+      "attr": "炎",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "雷霆女武神",
+      "name": "雷霆女武神",
+      "atk": 3000,
+      "def": 2200,
+      "attr": "风",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "白蔷薇之影",
+      "name": "白蔷薇之影",
+      "atk": 2300,
+      "def": 2500,
+      "attr": "光",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "雾林铃兰",
+      "name": "雾林铃兰",
+      "atk": 2600,
+      "def": 2400,
+      "attr": "水",
+      "rarity": "SR",
+      "effect": {
+        "key": "heal1000",
+        "badge": "回复1000",
+        "label": "回复 1000",
+        "heal": 1000,
+        "text": "出牌时恢复 1000 点生命（不超过生命上限）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "熔狱锤王",
+      "name": "熔狱锤王",
+      "atk": 2900,
+      "def": 1900,
+      "attr": "炎",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "霜座兽王",
+      "name": "霜座兽王",
+      "atk": 2600,
+      "def": 2500,
+      "attr": "水",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "雷噬双首",
+      "name": "雷噬双首",
+      "atk": 3000,
+      "def": 1800,
+      "attr": "风",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "紫虚术士",
+      "name": "紫虚术士",
+      "atk": 2400,
+      "def": 2300,
+      "attr": "暗",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "血月游侠",
+      "name": "血月游侠",
+      "atk": 2900,
+      "def": 2000,
+      "attr": "暗",
+      "rarity": "SR",
+      "effect": {
+        "key": "discardOppHand",
+        "badge": "弃敌1牌",
+        "label": "弃敌方 1 张手牌",
+        "discardOppHand": 1,
+        "text": "出牌时随机弃掉对手 1 张手牌（对手没有手牌时无效）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "雷光双枪",
+      "name": "雷光双枪",
+      "atk": 3000,
+      "def": 2200,
+      "attr": "风",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "持剑女骑士",
+      "name": "持剑女骑士",
+      "atk": 3600,
+      "def": 3000,
+      "attr": "光",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "虚空法皇",
+      "name": "虚空法皇",
+      "atk": 3900,
+      "def": 3400,
+      "attr": "暗",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "熔狱女王",
+      "name": "熔狱女王",
+      "atk": 4200,
+      "def": 2800,
+      "attr": "炎",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "星海女神",
+      "name": "星海女神",
+      "atk": 4500,
+      "def": 4000,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "墨菊巫女",
+      "name": "墨菊巫女",
+      "atk": 3400,
+      "def": 3600,
+      "attr": "暗",
+      "rarity": "SSR",
+      "effect": {
+        "key": "fieldGuard",
+        "badge": "受伤-30%",
+        "label": "出牌区减伤 30%",
+        "damageTakenMul": 0.7,
+        "text": "只要这张卡留在自己的出牌区（被自己下一张卡覆盖前），自己受到的所有伤害降低 30%（含无视护盾的直伤，在护盾吸收之前结算）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "圣环花冠",
+      "name": "圣环花冠",
+      "atk": 4300,
+      "def": 3900,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": {
+        "key": "heal1500",
+        "badge": "回复1500",
+        "label": "回复 1500",
+        "heal": 1500,
+        "text": "出牌时恢复 1500 点生命（不超过生命上限）。"
+      },
+      "image": ""
+    },
+    {
+      "id": "骸座兽皇",
+      "name": "骸座兽皇",
+      "atk": 4000,
+      "def": 3500,
+      "attr": "暗",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "曜焰兽帝",
+      "name": "曜焰兽帝",
+      "atk": 4500,
+      "def": 3200,
+      "attr": "炎",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "血月巫王",
+      "name": "血月巫王",
+      "atk": 3800,
+      "def": 3900,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "左轮圣女",
+      "name": "左轮圣女",
+      "atk": 4400,
+      "def": 3900,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    }
+  ]
+}

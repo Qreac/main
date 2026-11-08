@@ -6,15 +6,16 @@
     3. 都没有时传空串，让 libpq 读取 Railway 注入的
        PGHOST / PGPORT / PGUSER / PGPASSWORD / PGDATABASE
 
-本模块只负责「连库 + 建表」，不写业务 SQL；业务 SQL 全部在 main.py，
+本模块负责「连库 + 建表 + 读取卡片种子」；业务 SQL 全部在 main.py，
 并且一律使用 %s 参数占位符，不拼字符串。
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, Iterator
 
 from dotenv import load_dotenv
 from psycopg import Connection
@@ -108,7 +109,48 @@ SCHEMA_STATEMENTS = (
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_account_ci ON users (LOWER(account))",
     # 如果以后要求「昵称也不能重复」，取消下面这行注释即可，业务逻辑无需改动：
     # "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_nickname_ci ON users (LOWER(nickname))",
+    #
+    # 卡片表：与前端 config.js 的卡池一一对应。卡图暂时不入库，image 默认空串。
+    # id 用前端的卡片 id（当前就是卡名），因此用 TEXT 主键而不是自增序号。
+    # effect 用 JSONB 保存完整效果配置（含数值参数），无效果卡为 NULL。
+    """
+    CREATE TABLE IF NOT EXISTS cards (
+        id          VARCHAR(128) PRIMARY KEY,
+        name        VARCHAR(128) NOT NULL,
+        atk         INTEGER      NOT NULL DEFAULT 0 CHECK (atk >= 0),
+        "def"       INTEGER      NOT NULL DEFAULT 0 CHECK ("def" >= 0),
+        attr        VARCHAR(8)   NOT NULL,
+        rarity      VARCHAR(4)   NOT NULL,
+        effect      JSONB,
+        image       TEXT         NOT NULL DEFAULT '',
+        created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        CONSTRAINT chk_cards_rarity CHECK (rarity IN ('N', 'R', 'SR', 'SSR'))
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_cards_rarity ON cards (rarity)",
 )
+
+# 卡片种子文件由前端 config.js 导出（js/cards-sync.js 的 collect()），
+# 与本项目一起提交到 GitHub；启动时幂等 upsert，首次部署无需手工导入。
+SEED_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cards_seed.json")
+
+
+def load_seed_cards() -> list[dict[str, Any]]:
+    """读取 cards_seed.json；文件缺失或格式不对时返回空列表，不影响服务启动。"""
+    if not os.path.exists(SEED_FILE):
+        log.warning("未找到卡片种子文件 %s，跳过启动时导入", SEED_FILE)
+        return []
+    try:
+        with open(SEED_FILE, encoding="utf-8") as fp:
+            data = json.load(fp)
+        cards = data.get("cards", []) if isinstance(data, dict) else data
+        if not isinstance(cards, list):
+            raise ValueError("cards 字段应为数组")
+        return [c for c in cards if isinstance(c, dict) and c.get("id")]
+    except Exception as exc:  # 种子是可选数据，坏文件不该让服务起不来
+        log.warning("卡片种子文件解析失败，跳过导入: %s", exc)
+        return []
 
 
 def init_schema() -> None:
@@ -117,4 +159,4 @@ def init_schema() -> None:
         with conn.cursor() as cur:
             for statement in SCHEMA_STATEMENTS:
                 cur.execute(statement)
-    log.info("users 表已就绪")
+    log.info("users / cards 表已就绪")
