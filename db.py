@@ -31,7 +31,7 @@ _pool: ConnectionPool | None = None
 def conninfo() -> str:
     """把 Railway 给的连接串整理成 psycopg3 可直接使用的形式。"""
     url = (os.getenv("DATABASE_URL") or os.getenv("DATABASE_PUBLIC_URL") or "").strip()
-     log.info(f"准备使用的数据库连接串前缀: {url[:20]}...") 
+    log.info(f"准备使用的数据库连接串前缀: {url[:20]}...") 
     if url.startswith("postgres://"):
         # psycopg3 / SQLAlchemy 统一用 postgresql:// 前缀
         url = "postgresql://" + url[len("postgres://") :]
