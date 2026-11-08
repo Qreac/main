@@ -10,6 +10,7 @@
     GET  /users/check-account        写入前检查账户名是否已被占用
     POST /users                      写入新用户（先查重，再插入）
     GET  /users/{user_id}            按序号查询用户
+    GET  /users/{user_id}/points     只取积分（前端登录后刷新用）
     GET  /users/by-account/{account} 按账户名查询用户
     GET  /users                      分页 / 搜索用户列表
     PATCH /users/{user_id}           修改昵称 / 积分
@@ -40,6 +41,7 @@ from schemas import (
     UserCreate,
     UserListOut,
     UserOut,
+    PointsOut,
     UserStatsIn,
     UserUpdate,
 )
@@ -72,13 +74,28 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()]
+# CORS 白名单：正式前端是部署在 Netlify 的静态站，其余为本地调试用。
+# "null" 是 file:// 双击打开本地 HTML 时浏览器发出的 Origin。
+# Railway 上可再用环境变量 ALLOWED_ORIGINS 覆盖（多个用英文逗号分隔）。
+DEFAULT_ORIGINS = ",".join([
+    "https://sparkly-bombolone-ceabfb.netlify.app",
+    "http://localhost:8000", "http://127.0.0.1:8000",
+    "http://localhost:5500", "http://127.0.0.1:5500",
+    "http://localhost:3000", "http://127.0.0.1:3000",
+    "null",
+])
+_origins = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins or ["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_origins,
+    allow_credentials=False,             # 本项目不用 cookie，保持 False 才能用 "*" 类宽松来源
+    allow_methods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "Authorization"],
+    max_age=600,
 )
 
 
@@ -231,6 +248,17 @@ def get_user(user_id: int) -> dict:
     """按序号（主键）查询。"""
     with db_session() as conn, conn.cursor() as cur:
         cur.execute(f"SELECT {COLS} FROM users WHERE id = %s", (user_id,))
+        return _row_or_404(cur.fetchone())
+
+
+@app.get("/users/{user_id}/points", response_model=PointsOut, tags=["用户"])
+def get_points(user_id: int) -> dict:
+    """前端登录成功后的轻量积分查询，只回 4 个字段，不含战绩和密码。"""
+    with db_session() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, account, nickname, points FROM users WHERE id = %s",
+            (user_id,),
+        )
         return _row_or_404(cur.fetchone())
 
 

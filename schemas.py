@@ -97,6 +97,14 @@ class UserOut(BaseModel):
     updated_at: datetime
 
 
+class PointsOut(BaseModel):
+    """登录后的轻量积分响应。"""
+    id: int
+    account: str
+    nickname: str
+    points: int
+
+
 class UserListOut(BaseModel):
     items: list[UserOut]
     total: int
