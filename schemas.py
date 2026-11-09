@@ -115,6 +115,13 @@ class UserOut(BaseModel):
     updated_at: datetime
 
 
+class TokenOut(UserOut):
+    """登录 / 注册返回用户资料 + JWT 凭证；其它用户查询接口仍只返回 UserOut。"""
+    access_token: str = Field(description="JWT，后续请求放在 Authorization: Bearer <token>")
+    token_type: str = "Bearer"
+    expires_in: int = Field(description="凭证有效期（秒）")
+
+
 class PointsOut(BaseModel):
     """登录后的轻量积分响应。"""
     id: int
@@ -170,3 +177,29 @@ class CardListOut(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# ---------------------------------------------------------------------------
+# 玩家卡组：按用户存整份快照，数组元素是前端 config.js 的卡片 id（卡名）
+# ---------------------------------------------------------------------------
+class DeckSaveIn(BaseModel):
+    """整份覆盖写入：卡组 + 备用牌库。前端每次编辑 / 抽卡后调用一次。"""
+    deck: list[str] = Field(default_factory=list, max_length=500,
+                            description="卡组卡名数组，前端上限 40 张")
+    collection: list[str] = Field(default_factory=list, max_length=5000,
+                                  description="备用牌库卡名数组（拥有但没编入卡组的卡）")
+
+    @field_validator("deck", "collection")
+    @classmethod
+    def clean_ids(cls, v: list[str]) -> list[str]:
+        return [s.strip() for s in v if isinstance(s, str) and s.strip()]
+
+
+class DeckOut(BaseModel):
+    """exists=false 表示这个用户还没有云端卡组，前端应上传本地存档作为初始化。"""
+    user_id: int
+    exists: bool
+    deck: list[str]
+    collection: list[str]
+    version: int
+    updated_at: str | None = None

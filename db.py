@@ -129,6 +129,23 @@ SCHEMA_STATEMENTS = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_cards_rarity ON cards (rarity)",
+    #
+    # 玩家卡组：一个用户一行。deck / collection 都是「卡名字符串数组」，
+    # 与前端 store.js 存档里的两个数组一一对应（抽出 → collection，编入 → deck）。
+    # 卡池静态定义仍在 cards 表；这里只记录「这个用户拥有哪些卡、组了什么卡组」，
+    # 用 JSONB 整份快照读写，避免为每张卡建一行。version 便于日后做乐观锁。
+    """
+    CREATE TABLE IF NOT EXISTS user_decks (
+        user_id     BIGINT      PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        deck        JSONB       NOT NULL DEFAULT '[]'::jsonb,
+        collection  JSONB       NOT NULL DEFAULT '[]'::jsonb,
+        version     INTEGER     NOT NULL DEFAULT 1,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT chk_user_decks_deck CHECK (jsonb_typeof(deck) = 'array'),
+        CONSTRAINT chk_user_decks_collection CHECK (jsonb_typeof(collection) = 'array')
+    )
+    """,
 )
 
 # 卡片种子文件由前端 config.js 导出（js/cards-sync.js 的 collect()），
@@ -159,4 +176,4 @@ def init_schema() -> None:
         with conn.cursor() as cur:
             for statement in SCHEMA_STATEMENTS:
                 cur.execute(statement)
-    log.info("users / cards 表已就绪")
+    log.info("users / cards / user_decks 表已就绪")

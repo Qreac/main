@@ -8,7 +8,8 @@
 接口一览：
     GET  /health                     健康检查（Railway 用）
     GET  /users/check-account        写入前检查账户名是否已被占用
-    POST /users                      写入新用户（先查重，再插入）
+    POST /users                      注册（返回用户资料 + JWT access_token）
+    POST /users/verify-password      登录校验（返回用户资料 + JWT access_token）
     GET  /users/{user_id}            按序号查询用户
     GET  /users/{user_id}/points     只取积分（前端登录后刷新用）
     POST /users/{user_id}/draw       抽卡扣分（单抽 10 / 十连 90，服务端原子扣减）
@@ -16,12 +17,18 @@
     GET  /users                      分页 / 搜索用户列表
     PATCH /users/{user_id}           修改昵称 / 积分
     PUT  /users/{user_id}/stats      整份战绩覆盖写入（同步本地存档）
+    GET  /users/{user_id}/deck       读取该用户的卡组 + 备用牌库（登录后恢复用）
+    PUT  /users/{user_id}/deck       整份覆盖写入卡组 + 备用牌库（编辑 / 抽卡后同步）
     POST /users/{user_id}/match-result  记录一局对战（胜 +10 / 负或平 +5，胜率自动重算）
-    POST /users/verify-password      校验账户名 + 密码
     POST /cards/import               批量写入 / 更新卡片（幂等 upsert，前端卡池同步用）
     GET  /cards                      卡片列表（可按稀有度 / 名称筛选）
     GET  /cards/{card_id}            按卡片 id 查询单张
     GET  /docs                       Swagger 交互文档
+
+鉴权：PATCH /users/{id}、PUT /users/{id}/stats、POST /users/{id}/draw、
+      POST /users/{id}/match-result、GET/PUT /users/{id}/deck 需要
+      Authorization: Bearer <access_token>，且令牌里的用户必须等于路径 id（否则 403）。
+      注册 / 登录 / 只读用户资料 / 卡池字典无需令牌（卡池同步在登录前就会触发）。
 """
 from __future__ import annotations
 
@@ -32,12 +39,13 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Iterator
 
 import psycopg
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Connection
 from psycopg.errors import UniqueViolation
 from psycopg_pool import PoolTimeout
 
+import auth
 import db
 import security
 from schemas import (
@@ -45,11 +53,14 @@ from schemas import (
     CardImportOut,
     CardListOut,
     CardOut,
+    DeckOut,
+    DeckSaveIn,
     DrawIn,
     DrawOut,
     MatchResult,
     PasswordCheck,
     PointsOut,
+    TokenOut,
     UserCreate,
     UserListOut,
     UserOut,
@@ -73,6 +84,42 @@ COLS = (
 DRAW_COST = {"single": 10, "ten": 90}
 DRAW_COUNT = {"single": 1, "ten": 10}
 BATTLE_REWARD = {"win": 10, "loss": 5, "draw": 5}
+
+def with_token(user: dict) -> dict:
+    """注册 / 登录成功时，在用户资料后面附上 JWT 凭证。"""
+    return {
+        **user,
+        "access_token": auth.create_access_token(user["id"], user["account"]),
+        "token_type": "Bearer",
+        "expires_in": auth.EXPIRE_SECONDS,
+    }
+
+
+# 玩家卡组：一个用户一行，deck / collection 均为卡名数组
+DECK_COLS = "user_id, deck, collection, version, updated_at"
+
+
+def _as_list(value: Any) -> list[str]:
+    """psycopg3 把 jsonb 直接转成 list；SQLite 测试适配层里则是 JSON 字符串。"""
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return [str(x) for x in parsed] if isinstance(parsed, list) else []
+        except (ValueError, TypeError):
+            return []
+    return [str(x) for x in value] if isinstance(value, list) else []
+
+
+def _deck_out(row: dict) -> dict:
+    return {
+        "user_id": row["user_id"],
+        "exists": True,
+        "deck": _as_list(row["deck"]),
+        "collection": _as_list(row["collection"]),
+        "version": row["version"],
+        "updated_at": str(row["updated_at"]) if row["updated_at"] is not None else None,
+    }
+
 
 # 卡片表字段（"def" 加双引号，因为 def 在部分 SQL 方言里是关键字）
 CARD_COLS = 'id, name, atk, "def", attr, rarity, effect, image, created_at, updated_at'
@@ -151,7 +198,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FATE DRAW 玩家数据 API",
     version="0.1.0",
-    description="用户序号为唯一索引；账户名写入前查重；密码只存 PBKDF2 哈希；胜率由数据库生成列自动维护。",
+    description="密码只存 PBKDF2 哈希；胜率由数据库生成列维护；写操作与卡组需 JWT 本人令牌。",
     lifespan=lifespan,
 )
 
@@ -239,7 +286,7 @@ def check_account(
     return {"account": name, "available": not used}
 
 
-@app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED, tags=["用户"])
+@app.post("/users", response_model=TokenOut, status_code=status.HTTP_201_CREATED, tags=["用户"])
 def create_user(payload: UserCreate) -> dict:
     """写入新用户。账户名先查重，唯一索引再兜底并发冲突。"""
     with db_session() as conn, conn.cursor() as cur:
@@ -270,7 +317,7 @@ def create_user(payload: UserCreate) -> dict:
                 payload.losses,
             ),
         )
-        return _row_or_404(cur.fetchone())
+        return with_token(_row_or_404(cur.fetchone()))
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +333,7 @@ def get_user_by_account(account: str) -> dict:
         return _row_or_404(cur.fetchone())
 
 
-@app.post("/users/verify-password", response_model=UserOut, tags=["用户"])
+@app.post("/users/verify-password", response_model=TokenOut, tags=["用户"])
 def verify_password(payload: PasswordCheck) -> dict:
     """登录校验。账户不存在与密码错误返回同一个 401，避免账户名被枚举。"""
     with db_session() as conn, conn.cursor() as cur:
@@ -298,7 +345,7 @@ def verify_password(payload: PasswordCheck) -> dict:
     if row is None or not security.verify_password(payload.password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="账户名或密码错误")
     row.pop("password_hash", None)
-    return row
+    return with_token(row)
 
 
 @app.get("/users", response_model=UserListOut, tags=["用户"])
@@ -347,7 +394,7 @@ def get_points(user_id: int) -> dict:
 # 更新
 # ---------------------------------------------------------------------------
 @app.patch("/users/{user_id}", response_model=UserOut, tags=["用户"])
-def update_user(user_id: int, payload: UserUpdate) -> dict:
+def update_user(user_id: int, payload: UserUpdate, _claims: dict = Depends(auth.require_owner)) -> dict:
     if payload.nickname is None and payload.points is None:
         raise HTTPException(status_code=422, detail="没有需要更新的字段")
     with db_session() as conn, conn.cursor() as cur:
@@ -366,7 +413,7 @@ def update_user(user_id: int, payload: UserUpdate) -> dict:
 
 
 @app.post("/users/{user_id}/draw", response_model=DrawOut, tags=["用户"])
-def draw_cards(user_id: int, payload: DrawIn) -> dict:
+def draw_cards(user_id: int, payload: DrawIn, _claims: dict = Depends(auth.require_owner)) -> dict:
     """抽卡扣分。卡池与发牌仍在前端，服务端只做「有多少钱、扣多少、扣完剩多少」，
     用 UPDATE ... WHERE points >= cost 保证并发下不会被扣成负数。"""
     cost = DRAW_COST[payload.kind]
@@ -402,7 +449,7 @@ def draw_cards(user_id: int, payload: DrawIn) -> dict:
 
 
 @app.put("/users/{user_id}/stats", response_model=UserOut, tags=["用户"])
-def overwrite_stats(user_id: int, payload: UserStatsIn) -> dict:
+def overwrite_stats(user_id: int, payload: UserStatsIn, _claims: dict = Depends(auth.require_owner)) -> dict:
     """整份战绩覆盖写入，用于把本地存档 / 旧系统数据同步上来。
     win_rate 不需要传，数据库生成列会自动按新的胜负场次重算。"""
     with db_session() as conn, conn.cursor() as cur:
@@ -429,7 +476,7 @@ def overwrite_stats(user_id: int, payload: UserStatsIn) -> dict:
 
 
 @app.post("/users/{user_id}/match-result", response_model=UserOut, tags=["用户"])
-def record_match(user_id: int, payload: MatchResult) -> dict:
+def record_match(user_id: int, payload: MatchResult, _claims: dict = Depends(auth.require_owner)) -> dict:
     """记录一局结果。用 SQL 原子自增，避免「先读后写」的并发覆盖；
     win_rate 是生成列，数据库会在 UPDATE 时自动重算，无需应用层计算。
     不传 points_delta 时由服务端按胜 +10 / 负或平 +5 发放。"""
@@ -451,6 +498,53 @@ def record_match(user_id: int, payload: MatchResult) -> dict:
             (win, loss, delta, user_id),
         )
         return _row_or_404(cur.fetchone())
+
+
+# ---------------------------------------------------------------------------
+# 玩家卡组：按用户存整份快照，登录后由前端拉取并恢复
+# ---------------------------------------------------------------------------
+@app.get("/users/{user_id}/deck", response_model=DeckOut, tags=["卡组"])
+def get_deck(user_id: int, _claims: dict = Depends(auth.require_owner)) -> dict:
+    """读取该用户的卡组与备用牌库。没有记录时 exists=false，
+    前端会把本地存档上传做首次初始化，避免老玩家的卡组被覆盖。"""
+    with db_session() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        cur.execute(f"SELECT {DECK_COLS} FROM user_decks WHERE user_id = %s", (user_id,))
+        row = cur.fetchone()
+    if row is None:
+        return {"user_id": user_id, "exists": False, "deck": [], "collection": [],
+                "version": 0, "updated_at": None}
+    return _deck_out(row)
+
+
+@app.put("/users/{user_id}/deck", response_model=DeckOut, tags=["卡组"])
+def save_deck(user_id: int, payload: DeckSaveIn, _claims: dict = Depends(auth.require_owner)) -> dict:
+    """整份覆盖写入。ON CONFLICT 做 upsert，version 每次 +1 便于排查覆盖顺序。"""
+    deck_json = json.dumps(payload.deck, ensure_ascii=False)
+    collection_json = json.dumps(payload.collection, ensure_ascii=False)
+    with db_session() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        cur.execute(
+            """
+            INSERT INTO user_decks (user_id, deck, collection, version)
+            VALUES (%s, %s::jsonb, %s::jsonb, 1)
+            ON CONFLICT (user_id) DO UPDATE SET
+                deck        = EXCLUDED.deck,
+                collection  = EXCLUDED.collection,
+                version     = user_decks.version + 1,
+                updated_at  = NOW()
+            RETURNING user_id, deck, collection, version, updated_at
+            """,
+            (user_id, deck_json, collection_json),
+        )
+        row = cur.fetchone()
+    if row is None:
+        raise HTTPException(status_code=500, detail="卡组写入失败")
+    return _deck_out(row)
 
 
 # ---------------------------------------------------------------------------
