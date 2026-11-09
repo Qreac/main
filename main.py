@@ -23,9 +23,16 @@
     POST /cards/import               批量写入 / 更新卡片（幂等 upsert，前端卡池同步用）
     GET  /cards                      卡片列表（可按稀有度 / 名称筛选）
     GET  /cards/{card_id}            按卡片 id 查询单张
+    GET  /pvp/rooms                  双人对战房间列表
+    POST /pvp/rooms                  创建房间（房主）
+    POST /pvp/rooms/{id}/join        加入房间
+    POST /pvp/rooms/{id}/start       房主开始对局（服务端随机先手）
+    DELETE /pvp/rooms/{id}           离开 / 解散房间
+    WS   /pvp/ws/{id}?token=...      实时中继：30 秒计时 / 掉线判负 / 胜 +50 负 +10
     GET  /docs                       Swagger 交互文档
 
-鉴权：PATCH /users/{id}、PUT /users/{id}/stats、POST /users/{id}/draw、
+鉴权：PVP 的 REST 与 WebSocket 都需要 JWT（WS 通过 query 参数 token 传递）。
+PATCH /users/{id}、PUT /users/{id}/stats、POST /users/{id}/draw、
       POST /users/{id}/match-result、GET/PUT /users/{id}/deck 需要
       Authorization: Bearer <access_token>，且令牌里的用户必须等于路径 id（否则 403）。
       注册 / 登录 / 只读用户资料 / 卡池字典无需令牌（卡池同步在登录前就会触发）。
@@ -47,6 +54,7 @@ from psycopg_pool import PoolTimeout
 
 import auth
 import db
+import pvp
 import security
 from schemas import (
     CardImportIn,
@@ -191,7 +199,9 @@ async def lifespan(app: FastAPI):
     db.init_pool()
     db.init_schema()  # 幂等建表，首次部署无需手工跑 SQL
     seed_cards()      # 首次部署自动把当前卡池写进 cards 表，重复启动不会重复插入
+    pvp.start_background_tasks()   # 房间心跳 / 30 秒回合计时巡检
     yield
+    await pvp.stop_background_tasks()
     db.close_pool()
 
 
@@ -201,6 +211,7 @@ app = FastAPI(
     description="密码只存 PBKDF2 哈希；胜率由数据库生成列维护；写操作与卡组需 JWT 本人令牌。",
     lifespan=lifespan,
 )
+app.include_router(pvp.router)
 
 # CORS 白名单：正式前端是部署在 Netlify 的静态站，其余为本地调试用。
 # "null" 是 file:// 双击打开本地 HTML 时浏览器发出的 Origin。
@@ -221,7 +232,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
     allow_credentials=False,             # 本项目不用 cookie，保持 False 才能用 "*" 类宽松来源
-    allow_methods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization"],
     max_age=600,
 )

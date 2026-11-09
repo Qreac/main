@@ -120,6 +120,11 @@ def bearer_token(authorization: str | None) -> str:
     return token
 
 
+def require_auth(authorization: str | None = Header(None)) -> dict:
+    """只验令牌、不校验路径 user_id：用于房间列表 / 创建房间这类接口。"""
+    return decode_access_token(bearer_token(authorization))
+
+
 def require_owner(request: Request, authorization: str | None = Header(None)) -> dict:
     """FastAPI 依赖：必须是本人令牌，才能读写这个 user_id 的数据。
 

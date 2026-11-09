@@ -298,7 +298,13 @@
       "def": 1200,
       "attr": "暗",
       "rarity": "R",
-      "effect": null,
+      "effect": {
+        "key": "pierce750",
+        "badge": "穿盾-750",
+        "label": "无视护盾 -750",
+        "pierce": 750,
+        "text": "打出时额外无视对手护盾，直接减少对方 750 点生命（普通攻击仍会被护盾抵挡）。"
+      },
       "image": ""
     },
     {
@@ -400,7 +406,13 @@
       "def": 1900,
       "attr": "炎",
       "rarity": "SR",
-      "effect": null,
+      "effect": {
+        "key": "pierce1000",
+        "badge": "穿盾-1000",
+        "label": "无视护盾 -1000",
+        "pierce": 1000,
+        "text": "打出时额外无视对手护盾，直接减少对方 1000 点生命（普通攻击仍会被护盾抵挡）。"
+      },
       "image": ""
     },
     {
@@ -584,7 +596,13 @@
       "def": 3500,
       "attr": "暗",
       "rarity": "SSR",
-      "effect": null,
+      "effect": {
+        "key": "levelDominance",
+        "badge": "等级压制",
+        "label": "等级压制 伤害×2",
+        "levelDominanceMul": 2,
+        "text": "若敌方出牌区当前的卡等级低于本卡等级，本次出牌造成的伤害变为双倍；敌方还没出过牌时不触发。"
+      },
       "image": ""
     },
     {
