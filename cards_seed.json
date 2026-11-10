@@ -1,7 +1,7 @@
 {
   "source": "js/config.js → YGO.catalog() + getCardById()",
   "note": "卡图暂时不入库，image 统一为空串；effect 为完整效果配置，无效果卡为 null",
-  "count": 53,
+  "count": 73,
   "cards": [
     {
       "id": "鲜花女郎",
@@ -204,6 +204,56 @@
       "image": ""
     },
     {
+      "id": "沉船潜客",
+      "name": "沉船潜客",
+      "atk": 1400,
+      "def": 1000,
+      "attr": "地",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "幽网渔翁",
+      "name": "幽网渔翁",
+      "atk": 1000,
+      "def": 700,
+      "attr": "暗",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "灯塔守夜人",
+      "name": "灯塔守夜人",
+      "atk": 1200,
+      "def": 900,
+      "attr": "光",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "月潮鳞民",
+      "name": "月潮鳞民",
+      "atk": 900,
+      "def": 800,
+      "attr": "水",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "拾螺老翁",
+      "name": "拾螺老翁",
+      "atk": 600,
+      "def": 1100,
+      "attr": "水",
+      "rarity": "N",
+      "effect": null,
+      "image": ""
+    },
+    {
       "id": "西部骑士",
       "name": "西部骑士",
       "atk": 1700,
@@ -390,6 +440,56 @@
       "image": ""
     },
     {
+      "id": "潮骨祭司",
+      "name": "潮骨祭司",
+      "atk": 2100,
+      "def": 1300,
+      "attr": "暗",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "礁光潜客",
+      "name": "礁光潜客",
+      "atk": 1600,
+      "def": 1700,
+      "attr": "水",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "螺语巫女",
+      "name": "螺语巫女",
+      "atk": 1400,
+      "def": 2000,
+      "attr": "风",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "骨渊回廊",
+      "name": "骨渊回廊",
+      "atk": 1500,
+      "def": 1900,
+      "attr": "地",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "渊底枪骑",
+      "name": "渊底枪骑",
+      "atk": 2200,
+      "def": 1500,
+      "attr": "水",
+      "rarity": "R",
+      "effect": null,
+      "image": ""
+    },
+    {
       "id": "哀伤幽魂",
       "name": "哀伤幽魂",
       "atk": 2300,
@@ -518,6 +618,56 @@
       "image": ""
     },
     {
+      "id": "沉海女王",
+      "name": "沉海女王",
+      "atk": 2900,
+      "def": 2600,
+      "attr": "水",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "幽舰舵主",
+      "name": "幽舰舵主",
+      "atk": 2800,
+      "def": 2100,
+      "attr": "暗",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "浪歌海妖",
+      "name": "浪歌海妖",
+      "atk": 2600,
+      "def": 2500,
+      "attr": "水",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "风暴潮术士",
+      "name": "风暴潮术士",
+      "atk": 3000,
+      "def": 1900,
+      "attr": "风",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "沉殿冕王",
+      "name": "沉殿冕王",
+      "atk": 3000,
+      "def": 2300,
+      "attr": "炎",
+      "rarity": "SR",
+      "effect": null,
+      "image": ""
+    },
+    {
       "id": "持剑女骑士",
       "name": "持剑女骑士",
       "atk": 3600,
@@ -630,6 +780,56 @@
       "name": "左轮圣女",
       "atk": 4400,
       "def": 3900,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "星渊之眼",
+      "name": "星渊之眼",
+      "atk": 4500,
+      "def": 3500,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "金冕渊主",
+      "name": "金冕渊主",
+      "atk": 4400,
+      "def": 3600,
+      "attr": "神",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "无面执典者",
+      "name": "无面执典者",
+      "atk": 3900,
+      "def": 4000,
+      "attr": "暗",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "千眸渊母",
+      "name": "千眸渊母",
+      "atk": 4000,
+      "def": 3900,
+      "attr": "光",
+      "rarity": "SSR",
+      "effect": null,
+      "image": ""
+    },
+    {
+      "id": "渊海孤瞳",
+      "name": "渊海孤瞳",
+      "atk": 4500,
+      "def": 3300,
       "attr": "神",
       "rarity": "SSR",
       "effect": null,
