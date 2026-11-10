@@ -210,7 +210,13 @@
       "def": 1000,
       "attr": "地",
       "rarity": "N",
-      "effect": null,
+      "effect": {
+        "key": "pierce250",
+        "badge": "穿盾-250",
+        "label": "无视护盾 -250",
+        "pierce": 250,
+        "text": "锈矛刺穿水压：额外无视对手护盾，直接减少对方 250 点生命（普通攻击仍会被护盾抵挡）。"
+      },
       "image": ""
     },
     {
@@ -230,7 +236,13 @@
       "def": 900,
       "attr": "光",
       "rarity": "N",
-      "effect": null,
+      "effect": {
+        "key": "restoreCost",
+        "badge": "回1费",
+        "label": "回复 1 点费用",
+        "restoreCost": 1,
+        "text": "灯火替他多争来一口气：出牌后回复自己 1 点费用，回复后不会超过本回合费用上限。"
+      },
       "image": ""
     },
     {
@@ -240,7 +252,13 @@
       "def": 800,
       "attr": "水",
       "rarity": "N",
-      "effect": null,
+      "effect": {
+        "key": "fieldGuard10",
+        "badge": "受伤-10%",
+        "label": "出牌区减伤 10%",
+        "damageTakenMul": 0.9,
+        "text": "湿滑的鳞片挡下零星一击：只要这张卡留在自己的出牌区，自己受到的所有伤害降低 10%（含无视护盾的直伤，在护盾吸收之前结算）。"
+      },
       "image": ""
     },
     {
@@ -250,7 +268,13 @@
       "def": 1100,
       "attr": "水",
       "rarity": "N",
-      "effect": null,
+      "effect": {
+        "key": "drawSelf",
+        "badge": "抽1张",
+        "label": "当前回合抽 1 张",
+        "drawSelf": 1,
+        "text": "螺壳里还藏着一段潮声：出牌后立刻从自己的牌库抽 1 张卡（手牌已满或牌库空时无效）。"
+      },
       "image": ""
     },
     {
@@ -446,7 +470,13 @@
       "def": 1300,
       "attr": "暗",
       "rarity": "R",
-      "effect": null,
+      "effect": {
+        "key": "damage15",
+        "badge": "伤害×1.5",
+        "label": "伤害 ×1.5",
+        "damageMul": 1.5,
+        "text": "鱼骨杖点过之处潮水倒灌：本次出牌造成的伤害变为 1.5 倍。"
+      },
       "image": ""
     },
     {
@@ -456,7 +486,13 @@
       "def": 1700,
       "attr": "水",
       "rarity": "R",
-      "effect": null,
+      "effect": {
+        "key": "pierce500",
+        "badge": "穿盾-500",
+        "label": "无视护盾 -500",
+        "pierce": 500,
+        "text": "冷光顺着指缝钻进甲缝：额外无视对手护盾，直接减少对方 500 点生命（普通攻击仍会被护盾抵挡）。"
+      },
       "image": ""
     },
     {
@@ -466,7 +502,13 @@
       "def": 2000,
       "attr": "风",
       "rarity": "R",
-      "effect": null,
+      "effect": {
+        "key": "shieldGain13",
+        "badge": "回合盾×1.3",
+        "label": "本回合护盾 ×1.3",
+        "turnShieldGainMul": 1.3,
+        "text": "螺声把潮水叠成围墙：出牌后，本回合己方获得的所有护盾（含此前已获得的、本卡的，以及后续出牌的）都变为 1.3 倍；受护盾上限约束，下回合自动失效。"
+      },
       "image": ""
     },
     {
@@ -476,7 +518,13 @@
       "def": 1900,
       "attr": "地",
       "rarity": "R",
-      "effect": null,
+      "effect": {
+        "key": "oppDrawPenalty",
+        "badge": "敌补-1",
+        "label": "对手下次少补 1 张",
+        "oppDrawPenalty": 1,
+        "text": "走过回廊的人会少带一样东西：对手下一次补牌少补 1 张（原本补到 5 张，只会补到 4 张）。"
+      },
       "image": ""
     },
     {
@@ -624,7 +672,13 @@
       "def": 2600,
       "attr": "水",
       "rarity": "SR",
-      "effect": null,
+      "effect": {
+        "key": "shieldDouble",
+        "badge": "护盾×2",
+        "label": "护盾双倍",
+        "shieldTotalMul": 2,
+        "text": "螺杯倾下整片海：出牌后自身护盾总量变为双倍（含本次 DEF 转化的护盾，不超过护盾上限）。"
+      },
       "image": ""
     },
     {
@@ -634,7 +688,13 @@
       "def": 2100,
       "attr": "暗",
       "rarity": "SR",
-      "effect": null,
+      "effect": {
+        "key": "discardOppHand",
+        "badge": "弃敌1牌",
+        "label": "弃敌方 1 张手牌",
+        "discardOppHand": 1,
+        "text": "沉船带走的不只是货物：出牌时随机弃掉对手 1 张手牌（对手没有手牌时无效）。"
+      },
       "image": ""
     },
     {
@@ -654,7 +714,13 @@
       "def": 1900,
       "attr": "风",
       "rarity": "SR",
-      "effect": null,
+      "effect": {
+        "key": "oppCostPenalty",
+        "badge": "敌费-1",
+        "label": "敌方下回合费用 -1",
+        "oppCostPenalty": 1,
+        "text": "雷声压住了对方的下一句咒：对手下个回合的可用费用自动扣除 1 点。"
+      },
       "image": ""
     },
     {
@@ -664,7 +730,13 @@
       "def": 2300,
       "attr": "炎",
       "rarity": "SR",
-      "effect": null,
+      "effect": {
+        "key": "levelDominance",
+        "badge": "等级压制",
+        "label": "等级压制 伤害×2",
+        "levelDominanceMul": 2,
+        "text": "石阶之上没有平视：若敌方出牌区当前的卡等级低于本卡（★8），本次出牌造成的伤害变为双倍；敌方还没出过牌时不触发。"
+      },
       "image": ""
     },
     {
@@ -802,7 +874,14 @@
       "def": 3600,
       "attr": "神",
       "rarity": "SSR",
-      "effect": null,
+      "effect": {
+        "key": "abyssBurst",
+        "badge": "爆发·穿盾",
+        "label": "伤害×2 且穿盾 -1000",
+        "damageMul": 2,
+        "pierce": 1000,
+        "text": "金光与触须一同落下：本次出牌造成的伤害变为双倍，并额外无视护盾直接减少对方 1000 点生命（穿盾部分仍受对方出牌区减伤影响）。"
+      },
       "image": ""
     },
     {
@@ -812,7 +891,13 @@
       "def": 4000,
       "attr": "暗",
       "rarity": "SSR",
-      "effect": null,
+      "effect": {
+        "key": "fieldGuard",
+        "badge": "受伤-30%",
+        "label": "出牌区减伤 30%",
+        "damageTakenMul": 0.7,
+        "text": "石板翻过之前，伤害先被划掉三成：只要这张卡留在自己的出牌区，自己受到的所有伤害降低 30%（含无视护盾的直伤，在护盾吸收之前结算）。"
+      },
       "image": ""
     },
     {
@@ -822,7 +907,14 @@
       "def": 3900,
       "attr": "光",
       "rarity": "SSR",
-      "effect": null,
+      "effect": {
+        "key": "abyssBulwark",
+        "badge": "护盾·双效",
+        "label": "护盾翻倍 + 本回合 ×1.5",
+        "shieldTotalMul": 2,
+        "turnShieldGainMul": 1.5,
+        "text": "所有眼睛一齐合上，潮水便成了墙：本回合己方获得的所有护盾变为 1.5 倍（含追溯补发），随后自身护盾总量再翻倍；均受护盾上限约束，倍率下回合自动失效。"
+      },
       "image": ""
     },
     {
@@ -832,7 +924,13 @@
       "def": 3300,
       "attr": "神",
       "rarity": "SSR",
-      "effect": null,
+      "effect": {
+        "key": "gaze",
+        "badge": "凝视削盾",
+        "label": "凝视：削去敌方一半护盾",
+        "shieldBreakRatio": 0.5,
+        "text": "被那只眼看见的瞬间，屏障先塌了一半：出牌时削去对方当前护盾的一半（至少 1 点），在本次攻击的护盾吸收之前结算；只削盾、不造成生命伤害，也不受对方出牌区减伤影响。"
+      },
       "image": ""
     }
   ]
