@@ -474,6 +474,18 @@ async def room_socket(ws: WebSocket, room_id: str) -> None:
                              "deadline_in": deadline_in})
                 continue
 
+            if t == "surrender":
+                # 任一方主动认输：另一方直接获胜，只结算一次（与断线判负同一套流程）
+                if room.status != "playing" or uid not in (room.host_id, room.guest_id):
+                    continue
+                winner = room.guest_id if uid == room.host_id else room.host_id
+                if winner is None:
+                    continue
+                await _broadcast(room, {"type": "opponent_left", "user_id": uid,
+                                        "reason": "surrender"})
+                await _finish(room, winner, uid, "surrender")
+                continue
+
             if t == "result":
                 if uid != room.host_id:
                     await _send(ws, {"type": "error", "message": "只有房主能提交结果"})
