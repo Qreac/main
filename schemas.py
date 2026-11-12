@@ -19,6 +19,27 @@ def _strip(value: str) -> str:
     return value
 
 
+def _avatar_url(value: str | None) -> str | None:
+    """头像链接只接受 http(s) 外链或站内相对路径；空串表示恢复默认头像。
+
+    拒绝 javascript: / data: 之类的伪协议，避免把不可信字符串塞进 <img src>。
+    """
+    if value is None:
+        return None
+    v = value.strip()
+    if not v:
+        return ""
+    if len(v) > 512:
+        raise ValueError("图片链接不能超过 512 个字符")
+    if v.lower().startswith(("https://", "http://")):
+        return v
+    if ":" in v.split("/", 1)[0] or v.lower().startswith(("javascript:", "data:", "vbscript:")):
+        raise ValueError("只支持 http(s) 图片链接或站内相对路径")
+    if v.startswith(("/", "./", "images/", "assets/", "avatar/", "audio/")):
+        return v
+    raise ValueError("只支持 http(s) 图片链接或站内相对路径")
+
+
 class StatsMixin(BaseModel):
     """战绩字段的公共约束：胜 + 负 不能超过总场数（差额即平局）。"""
     total_games: int = Field(default=0, ge=0)
@@ -62,11 +83,20 @@ class UserStatsIn(StatsMixin):
 class UserUpdate(BaseModel):
     nickname: str | None = Field(default=None, min_length=1, max_length=64)
     points: int | None = Field(default=None, ge=0)
+    avatar_url: str | None = Field(
+        default=None, max_length=512,
+        description="头像图片链接；传空串恢复默认头像，只支持 http(s) 或站内相对路径",
+    )
 
     @field_validator("nickname")
     @classmethod
     def strip_nickname(cls, v: str | None) -> str | None:
         return _strip(v) if v is not None else None
+
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_avatar_url(cls, v: str | None) -> str | None:
+        return _avatar_url(v)
 
 
 class MatchResult(BaseModel):
@@ -74,6 +104,10 @@ class MatchResult(BaseModel):
     points_delta: int | None = Field(
         default=None, ge=-100000, le=100000,
         description="本局积分增减；不传时由服务端发放：胜 +10 / 负或平 +5",
+    )
+    mode: Literal["pve", "pvp"] | None = Field(
+        default=None,
+        description="对局来源；不传按人机(pve)处理。pvp 由房间服务直接结算，不计入人机活动",
     )
 
 
@@ -106,11 +140,13 @@ class UserOut(BaseModel):
     id: int = Field(description="序号，唯一索引")
     account: str
     nickname: str
+    avatar_url: str = Field(default="", description="头像图片链接，空串表示用默认符号头像")
     points: int
     total_games: int
     wins: int
     losses: int
     win_rate: float = Field(description="百分比，例如 66.67 表示 66.67%")
+    event_bonus: int = Field(default=0, description="本局额外发放的活动奖励积分，非活动局为 0")
     created_at: datetime
     updated_at: datetime
 
@@ -127,7 +163,31 @@ class PointsOut(BaseModel):
     id: int
     account: str
     nickname: str
+    avatar_url: str = Field(default="", description="顺便同步头像链接")
     points: int
+
+
+class EventOut(BaseModel):
+    """当前活动定义（公开信息，不需要登录）。"""
+    key: str
+    title: str
+    subtitle: str
+    description: str
+    target: int
+    reward: int
+    active: bool
+    rules: list[str]
+
+
+class EventProgressOut(BaseModel):
+    """某个用户在当前活动里的进度。"""
+    event: EventOut
+    progress: int = Field(description="已累计的人机胜场")
+    target: int
+    reward: int
+    completed: bool = Field(description="是否已达成")
+    awarded: int = Field(description="已发放的活动积分")
+    claimed_at: str | None = None
 
 
 class UserListOut(BaseModel):

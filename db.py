@@ -90,6 +90,7 @@ SCHEMA_STATEMENTS = (
         account       VARCHAR(64)  NOT NULL UNIQUE,
         nickname      VARCHAR(64)  NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
+        avatar_url    TEXT         NOT NULL DEFAULT '',
         points        INTEGER      NOT NULL DEFAULT 0 CHECK (points >= 0),
         total_games   INTEGER      NOT NULL DEFAULT 0 CHECK (total_games >= 0),
         wins          INTEGER      NOT NULL DEFAULT 0 CHECK (wins >= 0),
@@ -107,6 +108,9 @@ SCHEMA_STATEMENTS = (
     """,
     # 账户名大小写不敏感唯一（Alice / alice 视为同一个人）
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_account_ci ON users (LOWER(account))",
+    # 老库补列：CREATE TABLE IF NOT EXISTS 不会给已存在的表加字段，
+    # 这条幂等 ALTER 让线上 PostgreSQL 重启后自动获得头像字段，无需手工迁移。
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT NOT NULL DEFAULT ''",
     # 如果以后要求「昵称也不能重复」，取消下面这行注释即可，业务逻辑无需改动：
     # "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_nickname_ci ON users (LOWER(nickname))",
     #
@@ -146,6 +150,23 @@ SCHEMA_STATEMENTS = (
         CONSTRAINT chk_user_decks_collection CHECK (jsonb_typeof(collection) = 'array')
     )
     """,
+    #
+    # 活动进度：一个用户 × 一个活动一行。进度只由服务端在人机胜利时累加，
+    # 前端不能直接写 progress / claimed，避免自己给自己发奖励。
+    # 以后加新活动只要换 event_key，不改表结构。
+    """
+    CREATE TABLE IF NOT EXISTS user_events (
+        user_id     BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        event_key   VARCHAR(64) NOT NULL,
+        progress    INTEGER     NOT NULL DEFAULT 0 CHECK (progress >= 0),
+        claimed     BOOLEAN     NOT NULL DEFAULT FALSE,
+        awarded     INTEGER     NOT NULL DEFAULT 0 CHECK (awarded >= 0),
+        claimed_at  TIMESTAMPTZ,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, event_key)
+    )
+    """,
 )
 
 # 卡片种子文件由前端 config.js 导出（js/cards-sync.js 的 collect()），
@@ -176,4 +197,4 @@ def init_schema() -> None:
         with conn.cursor() as cur:
             for statement in SCHEMA_STATEMENTS:
                 cur.execute(statement)
-    log.info("users / cards / user_decks 表已就绪")
+    log.info("users / cards / user_decks / user_events 表已就绪")

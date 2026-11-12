@@ -15,7 +15,9 @@
     POST /users/{user_id}/draw       抽卡扣分（单抽 10 / 十连 90，服务端原子扣减）
     GET  /users/by-account/{account} 按账户名查询用户
     GET  /users                      分页 / 搜索用户列表
-    PATCH /users/{user_id}           修改昵称 / 积分
+    PATCH /users/{user_id}           修改昵称 / 积分 / 头像链接
+    GET  /events/current             当前活动定义（人机累计 5 胜 → 自动 +500 积分）
+    GET  /users/{user_id}/event      本人活动进度（需 JWT）
     PUT  /users/{user_id}/stats      整份战绩覆盖写入（同步本地存档）
     GET  /users/{user_id}/deck       读取该用户的卡组 + 备用牌库（登录后恢复用）
     PUT  /users/{user_id}/deck       整份覆盖写入卡组 + 备用牌库（编辑 / 抽卡后同步）
@@ -33,9 +35,9 @@
 
 鉴权：PVP 的 REST 与 WebSocket 都需要 JWT（WS 通过 query 参数 token 传递）。
 PATCH /users/{id}、PUT /users/{id}/stats、POST /users/{id}/draw、
-      POST /users/{id}/match-result、GET/PUT /users/{id}/deck 需要
+      POST /users/{id}/match-result、GET/PUT /users/{id}/deck、GET /users/{id}/event 需要
       Authorization: Bearer <access_token>，且令牌里的用户必须等于路径 id（否则 403）。
-      注册 / 登录 / 只读用户资料 / 卡池字典无需令牌（卡池同步在登录前就会触发）。
+      注册 / 登录 / 只读用户资料 / 活动定义 / 卡池字典无需令牌（卡池同步在登录前就会触发）。
 """
 from __future__ import annotations
 
@@ -65,6 +67,8 @@ from schemas import (
     DeckSaveIn,
     DrawIn,
     DrawOut,
+    EventOut,
+    EventProgressOut,
     MatchResult,
     PasswordCheck,
     PointsOut,
@@ -84,7 +88,7 @@ log = logging.getLogger("fate-api")
 
 # 所有查询都显式列出字段，password_hash 只在校验密码时单独读取
 COLS = (
-    "id, account, nickname, points, total_games, wins, losses, "
+    "id, account, nickname, avatar_url, points, total_games, wins, losses, "
     "win_rate, created_at, updated_at"
 )
 
@@ -92,6 +96,83 @@ COLS = (
 DRAW_COST = {"single": 10, "ten": 90}
 DRAW_COUNT = {"single": 1, "ten": 10}
 BATTLE_REWARD = {"win": 10, "loss": 5, "draw": 5}
+
+# ---------------------------------------------------------------------------
+# 当前活动：与人机对战累计获胜 5 场，自动发放 500 积分。
+# 活动定义放在服务端，进度存 user_events 表；前端只能读，不能自己写进度 / 发分。
+# ---------------------------------------------------------------------------
+EVENT = {
+    "key": "pve_win_5",
+    "title": "人机五胜挑战",
+    "subtitle": "CURRENT EVENT",
+    "description": "与人机对战并累计获胜 5 场，即可自动获得 500 积分。",
+    "target": 5,
+    "reward": 500,
+    "active": True,
+    "rules": [
+        "只有【人机对战】获胜才计入进度；真人对战由房间服务单独结算，不计入本活动。",
+        "累计胜利 5 场即可达成，输局或平局不会扣减已有进度。",
+        "达成时由服务器自动发放 500 积分，无需手动领取，每个账号仅限一次。",
+        "需要登录账号才会记录进度与发放奖励；未登录的本机试玩不参与活动。",
+    ],
+}
+
+
+def _event_row(cur, user_id: int) -> dict:
+    """读（必要时初始化）某用户在当前活动的进度，不做任何加分。"""
+    cur.execute(
+        """
+        INSERT INTO user_events (user_id, event_key) VALUES (%s, %s)
+        ON CONFLICT (user_id, event_key) DO NOTHING
+        """,
+        (user_id, EVENT["key"]),
+    )
+    cur.execute(
+        """
+        SELECT progress, claimed, awarded, claimed_at
+        FROM user_events WHERE user_id = %s AND event_key = %s
+        """,
+        (user_id, EVENT["key"]),
+    )
+    return cur.fetchone() or {"progress": 0, "claimed": False,
+                              "awarded": 0, "claimed_at": None}
+
+
+def _advance_event(cur, user_id: int, won: bool) -> int:
+    """人机对局结束后推进活动进度；达成时原子发放一次奖励，返回本次发放的积分。
+
+    并发下靠 `UPDATE ... WHERE claimed = FALSE ... RETURNING` 的行锁保证只发一次；
+    前端无法直接调用本函数，只能通过对局结算接口间接触发。
+    """
+    row = _event_row(cur, user_id)
+    if not won or row["claimed"]:
+        return 0
+    cur.execute(
+        """
+        UPDATE user_events SET progress = progress + 1, updated_at = NOW()
+        WHERE user_id = %s AND event_key = %s AND claimed = FALSE
+        """,
+        (user_id, EVENT["key"]),
+    )
+    row = _event_row(cur, user_id)
+    if row["progress"] < EVENT["target"]:
+        return 0
+    cur.execute(
+        """
+        UPDATE user_events
+        SET claimed = TRUE, claimed_at = NOW(), awarded = %s, updated_at = NOW()
+        WHERE user_id = %s AND event_key = %s AND claimed = FALSE
+        RETURNING user_id
+        """,
+        (EVENT["reward"], user_id, EVENT["key"]),
+    )
+    if cur.fetchone() is None:      # 另一个并发请求已经领过
+        return 0
+    cur.execute(
+        "UPDATE users SET points = points + %s, updated_at = NOW() WHERE id = %s",
+        (EVENT["reward"], user_id),
+    )
+    return int(EVENT["reward"])
 
 def with_token(user: dict) -> dict:
     """注册 / 登录成功时，在用户资料后面附上 JWT 凭证。"""
@@ -395,10 +476,40 @@ def get_points(user_id: int) -> dict:
     """前端登录成功后的轻量积分查询，只回 4 个字段，不含战绩和密码。"""
     with db_session() as conn, conn.cursor() as cur:
         cur.execute(
-            "SELECT id, account, nickname, points FROM users WHERE id = %s",
+            "SELECT id, account, nickname, avatar_url, points FROM users WHERE id = %s",
             (user_id,),
         )
         return _row_or_404(cur.fetchone())
+
+
+# ---------------------------------------------------------------------------
+# 活动：定义公开可读，进度只有本人能查，发放完全由服务端完成
+# ---------------------------------------------------------------------------
+@app.get("/events/current", response_model=EventOut, tags=["活动"])
+def current_event() -> dict:
+    """当前活动说明。未登录也能查看，用于活动页先渲染规则。"""
+    return EVENT
+
+
+@app.get("/users/{user_id}/event", response_model=EventProgressOut, tags=["活动"])
+def event_progress(user_id: int, _claims: dict = Depends(auth.require_owner)) -> dict:
+    """读取本人当前活动进度；进度只在 /match-result 里由服务端累加。"""
+    with db_session() as conn, conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM users WHERE id = %s", (user_id,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        row = _event_row(cur, user_id)
+    progress = int(row["progress"] or 0)
+    awarded = int(row["awarded"] or 0)
+    return {
+        "event": EVENT,
+        "progress": min(progress, int(EVENT["target"])),
+        "target": int(EVENT["target"]),
+        "reward": int(EVENT["reward"]),
+        "completed": bool(row["claimed"]) or progress >= int(EVENT["target"]),
+        "awarded": awarded,
+        "claimed_at": str(row["claimed_at"]) if row["claimed_at"] else None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -406,19 +517,20 @@ def get_points(user_id: int) -> dict:
 # ---------------------------------------------------------------------------
 @app.patch("/users/{user_id}", response_model=UserOut, tags=["用户"])
 def update_user(user_id: int, payload: UserUpdate, _claims: dict = Depends(auth.require_owner)) -> dict:
-    if payload.nickname is None and payload.points is None:
+    if payload.nickname is None and payload.points is None and payload.avatar_url is None:
         raise HTTPException(status_code=422, detail="没有需要更新的字段")
     with db_session() as conn, conn.cursor() as cur:
         cur.execute(
             f"""
             UPDATE users SET
-                nickname = COALESCE(%s, nickname),
-                points   = COALESCE(%s, points),
+                nickname   = COALESCE(%s, nickname),
+                points     = COALESCE(%s, points),
+                avatar_url = COALESCE(%s, avatar_url),
                 updated_at = NOW()
             WHERE id = %s
             RETURNING {COLS}
             """,
-            (payload.nickname, payload.points, user_id),
+            (payload.nickname, payload.points, payload.avatar_url, user_id),
         )
         return _row_or_404(cur.fetchone())
 
@@ -490,13 +602,19 @@ def overwrite_stats(user_id: int, payload: UserStatsIn, _claims: dict = Depends(
 def record_match(user_id: int, payload: MatchResult, _claims: dict = Depends(auth.require_owner)) -> dict:
     """记录一局结果。用 SQL 原子自增，避免「先读后写」的并发覆盖；
     win_rate 是生成列，数据库会在 UPDATE 时自动重算，无需应用层计算。
-    不传 points_delta 时由服务端按胜 +10 / 负或平 +5 发放。"""
+    不传 points_delta 时由服务端按胜 +10 / 负或平 +5 发放。
+
+    人机胜利（mode 不传或 'pve'）同时推进「人机五胜挑战」活动；
+    达成 5 胜时在同一事务里自动发放 500 积分，并用 event_bonus 告知前端。
+    真人对战走 /pvp 房间服务直接结算，mode='pvp' 明确不计入本活动。
+    """
     win = 1 if payload.result == "win" else 0
     loss = 1 if payload.result == "loss" else 0
     delta = BATTLE_REWARD[payload.result] if payload.points_delta is None else payload.points_delta
+    pve = payload.mode != "pvp"
     with db_session() as conn, conn.cursor() as cur:
         cur.execute(
-            f"""
+            """
             UPDATE users SET
                 total_games = total_games + 1,
                 wins        = wins + %s,
@@ -504,11 +622,17 @@ def record_match(user_id: int, payload: MatchResult, _claims: dict = Depends(aut
                 points      = GREATEST(points + %s, 0),
                 updated_at  = NOW()
             WHERE id = %s
-            RETURNING {COLS}
+            RETURNING id
             """,
             (win, loss, delta, user_id),
         )
-        return _row_or_404(cur.fetchone())
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        bonus = _advance_event(cur, user_id, pve and payload.result == "win") if pve else 0
+        cur.execute(f"SELECT {COLS} FROM users WHERE id = %s", (user_id,))
+        row = _row_or_404(cur.fetchone())
+        row["event_bonus"] = bonus
+        return row
 
 
 # ---------------------------------------------------------------------------
